@@ -1,0 +1,118 @@
+---
+title: "TXG Cisplatin PTEC Rat"
+author: "Nienke Kalverboer"
+date: "2024-06-24"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# load packages
+
+```{r}
+
+library(dplyr)
+library(pheatmap)
+library(reshape2)
+library(ComplexHeatmap)
+library(grid)
+library(extrafont)
+
+# Load fonts 
+font_import(pattern = "NotoSans")
+loadfonts(device = "win")  
+```
+
+# Select top 10 significant modules per conditions
+
+```{r}
+filtered_data <- moduleTableRat %>%
+  filter(module %in% c("hRPTECTERT1_229", "hRPTECTERT1_242", "hRPTECTERT1_267", "hRPTECTERT1_86", "hRPTECTERT1_202", "hRPTECTERT1_100", "hRPTECTERT1251_", "hRPTECTERT1_136", "hRPTECTERT1_141", "hRPTECTERT1_225", "hRPTECTERT1_291", "hRPTECTERT1_145", "hRPTECTERT1_133", "hRPTECTERT1_236", "hRPTECTERT1_192"))
+```
+
+# create heatmap
+
+```{r}
+
+filtered_data3 <- moduleTableRat %>%
+  filter(module %in% c("hRPTECTERT1_229", "hRPTECTERT1_242", "hRPTECTERT1_267", "hRPTECTERT1_86", "hRPTECTERT1_202", "hRPTECTERT1_100", "hRPTECTERT1251_", "hRPTECTERT1_136", "hRPTECTERT1_141", "hRPTECTERT1_225", "hRPTECTERT1_291", "hRPTECTERT1_145", "hRPTECTERT1_133", "hRPTECTERT1_236", "hRPTECTERT1_192"))
+
+# Reshape data
+heatmap_data3 <- dcast(filtered_data3, sample_id ~ module, value.var = "eg_score")
+
+# Rownames = sample_id
+rownames(heatmap_data3) <- heatmap_data3$sample_id
+heatmap_data3 <- heatmap_data3[,-1]  # Remove the sample_id column as it is now the rownames
+
+# Remove "uploadFile1_Single_"
+rownames(heatmap_data3) <- sub("uploadFile1_SINGLE_", "", rownames(heatmap_data3))
+
+# Rownames order
+desired_order3 <- c("CISPLATIN_8_2.5", "CISPLATIN_8_10", "CISPLATIN_8_50",
+                   "CISPLATIN_24_2.5", "CISPLATIN_24_10", "CISPLATIN_24_50",
+                   "CISPLATIN_72_2.5", "CISPLATIN_72_10", "CISPLATIN_72_50")
+
+
+heatmap_data3 <- heatmap_data3[desired_order3, ]
+heatmap_data3 <- t(heatmap_data3)
+
+
+```
+
+
+
+```{r}
+
+col_fun <- colorRampPalette(c("blue", "white", "red"))(n = 100)  
+ 
+# heatmap
+ht2 <- Heatmap(heatmap_data3, 
+              name = "EG score", 
+              cluster_rows = TRUE, 
+              cluster_columns = FALSE, 
+              show_column_names = TRUE, 
+              show_row_names = TRUE,
+              row_names_gp = gpar(fontfamily = "Noto Sans", fontsize = 10, face = "bold"), 
+              column_names_gp = gpar(fontfamily = "Noto Sans", fontsize = 10, face = "bold"),  
+              heatmap_legend_param = list(title = "EG score", title_gp = gpar(fontfamily = "Noto Sans", fontsize = 10, face = "bold")),
+              col = col_fun)  
+
+# Draw the heatmap
+draw(ht2)
+```
+
+
+```{r}
+str(heatmap_data3)
+```
+
+```{r}
+ht3 <- Heatmap(heatmap_data3, 
+               name = "EG score", 
+               cluster_rows = TRUE, 
+               cluster_columns = FALSE, 
+               show_column_names = TRUE, 
+               show_row_names = TRUE,
+               row_names_gp = gpar(fontfamily = "Noto Sans", fontsize = 10, face = "bold"), 
+               column_names_gp = gpar(fontfamily = "Noto Sans", fontsize = 10, face = "bold"),  
+               heatmap_legend_param = list(title = "EG score", title_gp = gpar(fontfamily = "Noto Sans", fontsize = 10, face = "bold")),
+               col = col_fun,
+               top_annotation = HeatmapAnnotation(
+                 title = anno_text("Treatment", gp = gpar(fontsize = 12, fontface = "bold", fontfamily = "Noto Sans"))
+               ),
+               left_annotation = rowAnnotation(
+                 title = anno_text("Pathway", gp = gpar(fontsize = 12, fontface = "bold", fontfamily = "Noto Sans"), rot = 90)
+               ))
+
+draw(ht3, main_heatmap = ht2, 
+     annotation_legend_side = "right",
+     heatmap_legend_side = "right")
+
+
+grid.text("Heatmap of Significant Pathways (ORA) >1 condition", 
+          x = unit(0.5, "npc"), y = unit(0.95, "npc"), 
+          just = c("center", "top"), 
+          gp = gpar(fontsize = 16, fontface = "bold", fontfamily = "Noto Sans"))
+```
+

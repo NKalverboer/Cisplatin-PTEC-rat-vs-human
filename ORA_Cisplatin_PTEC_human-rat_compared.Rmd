@@ -1,0 +1,284 @@
+---
+title: "ORA_Cisplatin_PTEC_human/rat compared"
+author: "Nienke Kalverboer"
+date: "2024-06-06"
+output: html_document
+---
+
+## Set directories 
+```{r}
+# input directory
+if(!dir.exists("INPUT")){
+  dir.create(path = file.path(getwd(), "INPUT"))
+}
+input_dir <- file.path(getwd(), "INPUT")
+
+# output directory
+if(!dir.exists("OUTPUT")){
+  dir.create(path = file.path(getwd(), "OUTPUT"))
+}
+output_dir <- file.path(getwd(), "OUTPUT")
+
+```
+
+# Load packages
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(sysfonts)
+library(showtext)
+
+# Add a custom font
+font_add_google("Noto Sans", "noto_sans")
+showtext_auto()
+```
+
+## Load results
+
+```{r}
+
+ORA_results_human = readRDS(file.path(output_dir, "20240618_ORA_results_human40.rds"))
+```
+
+```{r}
+ORA_results_rat = readRDS(file.path(output_dir, "20240618_ORA_results_rat40.rds"))
+```
+
+
+# Combine results human and rat ORA
+```{r}
+combined_top_ora <- bind_rows(ORA_results_human, ORA_results_rat)
+```
+
+## Graph (x = MEAN_ID_TREATMENT)
+```{r}
+
+p_ora_combined_hr <- ggplot(combined_top_ora, aes(x = MEAN_ID_TREATMENT, y = source, color = Adjusted.P.value)) +
+  geom_point() +
+  scale_size_continuous(range = c(1, 10)) +
+  # adjust colors 
+  scale_color_gradientn(colors = c("darkblue", "blue", "cyan", "yellow", "red"), trans = "log") +
+  # add labs 
+  labs(
+    title = "Top 10 Pathways by Lowest Adjusted P-value per Condition (ORA)",
+    x = "MEAN_ID_TREATMENT",
+    y = "Source",
+    size = 1,
+    color = "Adjusted P-value"
+  ) +
+  # adjust labs for readability 
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 40, hjust = 1),
+    axis.text.y = element_text(size = 2),
+    plot.title = element_text(size = 10) 
+  )
+
+
+print(p_ora_combined_hr)
+```
+
+
+
+### Graph MEAN_ID_TREATMENT > 1
+
+```{r}
+
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+
+
+# Select MEAN_ID_TREATMENT > 1
+multiple_sources <- combined_top_ora %>%
+  group_by(source) %>%
+  filter(n_distinct(MEAN_ID_TREATMENT) > 1) %>%
+  ungroup()
+
+
+p_ora_combined <- ggplot(multiple_sources, aes(x = MEAN_ID_TREATMENT, y = source, color = Adjusted.P.value)) +
+  geom_point(size = 3) +
+  scale_color_gradientn(colors = c("darkblue", "blue", "cyan", "yellow", "red"), trans = "log") +  
+  labs(
+    title = "Top 10 Pathways by Lowest Adjusted P-value >1 Conditions (ORA)",
+    x = "MEAN_ID_TREATMENT",
+    y = "Source",
+    color = "Adjusted P-value"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 40, hjust = 1),
+    axis.text.y = element_text(size = 5),
+    plot.title = element_text(size = 10) 
+  )
+
+
+print(p_ora_combined)
+```
+```{r}
+combined_top_ora$ID2 <- combined_top_ora$MEAN_ID_TREATMENT
+```
+
+```{r}
+# Separate ID2 to get species seperatly
+library(tidyr)
+combined_ORA_ID2 = combined_top_ora %>% separate("ID2",
+                                                into = c("species", "treatment", "hours", "dose"),
+                                                sep = "_") 
+```
+
+## Graph multiple species 
+```{r}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+
+
+# Select MEAN_ID_TREATMENT > 1
+multiple_sources_ID <- combined_ORA_ID2 %>%
+  group_by(source) %>%
+  filter(n_distinct(species) > 1) %>%
+  ungroup()
+
+
+p_ora_combined_ID <- ggplot(multiple_sources_ID, aes(x = MEAN_ID_TREATMENT, y = source, color = Adjusted.P.value)) +
+  geom_point(size = 3) +
+  scale_color_gradientn(colors = c("darkblue", "blue", "cyan", "yellow", "red"), trans = "log") +  
+  labs(
+    title = "Top 10 Pathways by Lowest Adjusted P-value >1 species (ORA)",
+    x = "Treatment condition",
+    y = "Source",
+    color = "Adjusted P-value"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 40, hjust = 1),
+    axis.text.y = element_text(size = 10, family = "noto_sans"),
+    plot.title = element_text(size = 10) 
+  )
+
+
+print(p_ora_combined_ID)
+```
+
+
+
+
+### Graph MEAN_ID_TREATMENT > 1
+
+
+# Split MEAN_ID_TREATMENT --> species
+
+```{r}
+# Separate MEAN_ID_TREATMENT to get species seperatly
+library(tidyr)
+combined_ORA_species = combined_top_ora %>% separate("MEAN_ID_TREATMENT",
+                                                into = c("species", "treatment", "hours", "dose"),
+                                                sep = "_") 
+
+```
+## Graph (x = species)
+
+```{r}
+
+p_ora_combined_species <- ggplot(combined_ORA_species, aes(x = species, y = source, color = Adjusted.P.value)) +
+  geom_point() +
+  scale_size_continuous(range = c(1, 10)) +
+  scale_color_gradientn(colors = c("darkblue", "blue", "cyan", "yellow", "red"), trans = "log") +  
+  labs(
+    title = "Top 10 Pathways by Lowest Adjusted P-value per species (ORA)",
+    x = "Species",
+    y = "Source",
+    size = 1,
+    color = "Adjusted P-value"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 40, hjust = 1),
+    axis.text.y = element_text(size = 2),
+    plot.title = element_text(size = 10) 
+  )
+
+
+print(p_ora_combined_species)
+```
+### Graph species > 1 
+
+```{r}
+
+
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+
+
+# Select species > 1
+multiple_sources <- combined_ORA_species %>%
+  group_by(source) %>%
+  filter(n_distinct(species) > 1) %>%
+  ungroup()
+
+
+p_ora_combined_species <- ggplot(multiple_sources, aes(x = species, y = source, color = Adjusted.P.value)) +
+  geom_point(aes(shape = hours)) +
+  scale_color_gradientn(colors = c("darkblue", "blue", "cyan", "yellow", "red"), trans = "log") + 
+  #geom_text(aes(label = paste(dose)), 
+           # hjust = -0.2, vjust = -0.5, size = 2)+
+  labs(
+    title = "Top 10 Pathways by Lowest Adjusted P-value >1 species (ORA)",
+    x = "Species",
+    y = "Source",
+    color = "Adjusted P-value"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 40, hjust = 1),
+    axis.text.y = element_text(size = 5),
+    plot.title = element_text(size = 10) 
+  )
+
+
+print(p_ora_combined_species)
+```
+```{r}
+multiple_sources_2 <- multiple_sources %>% unite("treatment_condition", hours, dose)
+```
+
+
+```{r}
+
+
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+
+
+# Select species > 1
+multiple_sources_2 <- multiple_sources_2 %>%
+  group_by(source) %>%
+  filter(n_distinct(species) > 1) %>%
+  ungroup()
+
+
+p_ora_combined_species_2 <- ggplot(multiple_sources_2, aes(x = species, y = source, color = Adjusted.P.value)) +
+  geom_point() +
+  scale_color_gradientn(colors = c("darkblue", "blue", "cyan", "yellow", "red"), trans = "log") +
+  
+  labs(
+    title = "Top 10 Pathways by Lowest Adjusted P-value per species (ORA)",
+    x = "Species",
+    y = "Source",
+    color = "Adjusted P-value"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 40, hjust = 1),
+    axis.text.y = element_text(size = 5),
+    plot.title = element_text(size = 10) 
+  )
+
+
+print(p_ora_combined_species_2)
+```

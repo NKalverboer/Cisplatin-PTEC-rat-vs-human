@@ -1,0 +1,250 @@
+---
+title: "GSEA_Cisplatin_PTEC_human/rat compared"
+author: "Nienke Kalverboer"
+date: "2024-06-06"
+output: html_document
+---
+
+# Input directory, load packages & load GSEA results 
+```{r}
+# input directory
+if(!dir.exists("INPUT")){
+  dir.create(path = file.path(getwd(), "INPUT"))
+}
+input_dir <- file.path(getwd(), "INPUT")
+
+# output directory
+if(!dir.exists("OUTPUT")){
+  dir.create(path = file.path(getwd(), "OUTPUT"))
+}
+output_dir <- file.path(getwd(), "OUTPUT")
+
+```
+
+# Load packages & data
+
+```{r}
+
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(sysfonts)
+library(showtext)
+
+# Add a custom font 
+font_add_google("Noto Sans", "noto_sans")
+showtext_auto()
+```
+
+```{r}
+GSEA_results_human = readRDS(file.path(output_dir, "20240618_GSEA_results_human40.rds"))
+
+```
+
+```{r}
+GSEA_results_rat = readRDS(file.path(output_dir, "20240618_GSEA_results_rat40.rds"))
+```
+
+## Combine results
+
+```{r}
+combined_top_GSEA <- bind_rows(GSEA_results_human, GSEA_results_rat)
+```
+
+# A combined GSEA graph of human and rat top 10 pathways for each treatment condition
+
+```{r}
+p_combined <- ggplot(combined_top_GSEA, aes(x = NES, y = reorder(pathway, NES), color = MEAN_ID_TREATMENT)) +
+  geom_point(size = 1, position = position_jitter(width = 0, height = 0)) +
+  labs(
+    title = "Top 10 Pathways by Absolute NES per Condition",
+    x = "Normalized Enrichment Score (NES)",
+    y = "Pathway",
+    color = "Condition"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.y = element_text(size = 4),  
+    plot.title = element_text(hjust = 0.5)
+  ) +
+  scale_x_continuous(limits = c(min(combined_top_GSEA$NES), max(combined_top_GSEA$NES)), expand = c(0.05, 0.05)) +
+  guides(color = guide_legend(title = "MEAN_ID_TREATMENT"))
+
+
+print(p_combined)
+
+
+```
+
+```{r}
+combined_top_GSEA$ID2 <- combined_top_GSEA$MEAN_ID_TREATMENT
+```
+
+```{r}
+# Separate ID2 to get species seperatly
+library(tidyr)
+combined_GSEA_ID2 = combined_top_GSEA %>% separate("ID2",
+                                                into = c("species", "treatment", "hours", "dose"),
+                                                sep = "_") 
+```
+
+```{r}
+# pathways with >1 treatment condition
+multiple_pathways_ID <- combined_GSEA_ID2 %>%
+  group_by(pathway) %>%
+  filter(n_distinct(species) > 1) %>%
+  ungroup()
+
+
+p_combined_ID <- ggplot(multiple_pathways_ID, aes(x = NES, y = reorder(pathway, NES), color = MEAN_ID_TREATMENT)) +
+  geom_point(size = 0.9, position = position_jitter(width = 0, height = 0)) +
+  labs(
+    title = "Top 10 Pathways by Absolute NES >1 species",
+    x = "Normalized Enrichment Score (NES)",
+    y = "Pathway",
+    color = "Condition"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.y = element_text(size = 10.5, family = "noto_sans"),  
+    plot.title = element_text(hjust = 0.5)
+  ) +
+  scale_x_continuous(limits = c(min(multiple_pathways_ID$NES), max(multiple_pathways_ID$NES)), expand = c(0.1, 0.1)) +
+  guides(color = guide_legend(title = "Treatment condition"))
+
+
+print(p_combined_ID)
+```
+
+
+
+# Only pathways that occur with multiple treatment conditions
+
+```{r}
+# pathways with >1 treatment condition
+multiple_pathways <- combined_top_GSEA %>%
+  group_by(pathway) %>%
+  filter(n_distinct(MEAN_ID_TREATMENT) > 1) %>%
+  ungroup()
+
+
+p_combined <- ggplot(multiple_pathways, aes(x = NES, y = reorder(pathway, NES), color = MEAN_ID_TREATMENT)) +
+  geom_point(size = 0.9, position = position_jitter(width = 0, height = 0)) +
+  labs(
+    title = "Top 10 Pathways by Absolute NES >1 conditions",
+    x = "Normalized Enrichment Score (NES)",
+    y = "Pathway",
+    color = "Condition"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.y = element_text(size = 4, family = "noto_sans"),  
+    plot.title = element_text(hjust = 0.5)
+  ) +
+  scale_x_continuous(limits = c(min(multiple_pathways$NES), max(multiple_pathways$NES)), expand = c(0.1, 0.1)) +
+  guides(color = guide_legend(title = "MEAN_ID_TREATMENT"))
+
+
+print(p_combined)
+```
+
+
+# Only pathways that occur in treatment condition
+
+```{r}
+# Select pathways only present in 1 condition
+single_pathways <- combined_top_GSEA %>%
+  group_by(pathway) %>%
+  filter(n_distinct(MEAN_ID_TREATMENT) == 1) %>%
+  ungroup()
+
+
+p_combined_single <- ggplot(single_pathways, aes(x = NES, y = reorder(pathway, NES), color = MEAN_ID_TREATMENT)) +
+  geom_point(size = 1, position = position_jitter(width = 0, height = 0)) +
+  labs(
+    title = "Top 10 Pathways by Absolute NES per Condition",
+    x = "Normalized Enrichment Score (NES)",
+    y = "Pathway",
+    color = "Condition"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.y = element_text(size = 4, family = "noto_sans"),  
+    plot.title = element_text(hjust = 0.5)
+  ) +
+  scale_x_continuous(limits = c(min(single_pathways$NES), max(single_pathways$NES)), expand = c(0.05, 0.05)) +
+  guides(color = guide_legend(title = "MEAN_ID_TREATMENT"))
+
+
+print(p_combined_single)
+```
+
+# Compared between species (not treatment conditions)
+
+## splitting MEAN_ID_TREATMENT 
+
+```{r}
+
+library(tidyr)
+combined_GSEA_hr = combined_top_GSEA %>% separate("MEAN_ID_TREATMENT",
+                                                into = c("species", "treatment", "hours", "dose"),
+                                                sep = "_") 
+
+```
+
+
+## Graph 
+
+```{r}
+
+p_combined <- ggplot(combined_GSEA_hr, aes(x = NES, y = reorder(pathway, NES), color = species)) +
+  geom_point(size = 1, position = position_jitter(width = 0, height = 0)) +
+  labs(
+    title = "Top 10 Pathways by Absolute NES per species",
+    x = "Normalized Enrichment Score (NES)",
+    y = "Pathway",
+    color = "Species"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.y = element_text(size = 4, family = "noto_sans"),  
+    plot.title = element_text(hjust = 0.5)
+  ) +
+  scale_x_continuous(limits = c(min(combined_top_GSEA$NES), max(combined_top_GSEA$NES)), expand = c(0.05, 0.05)) +
+  guides(color = guide_legend(title = "Species"))
+
+
+print(p_combined)
+
+
+```
+### graph pathways in multiple species
+
+```{r}
+
+
+multiple_pathways <- combined_GSEA_hr %>%
+  group_by(pathway) %>%
+  filter(n_distinct(species) > 1) %>%
+  ungroup()
+
+
+p_combined <- ggplot(multiple_pathways, aes(x = NES, y = reorder(pathway, NES), color = species)) +
+  geom_point( position = position_jitter(width = 0, height = 0)) +
+  
+  labs(
+    title = "Top 10 Pathways by Absolute NES per species",
+    x = "Normalized Enrichment Score (NES)",
+    y = "Pathway",
+    color = "Condition"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.y = element_text(size = 12, family = "noto_sans", face = "bold"),  
+    plot.title = element_text(hjust = 0.5, family = "noto_sans", face = "bold", size = 10)
+  ) +
+  scale_x_continuous(limits = c(min(multiple_pathways$NES), max(multiple_pathways$NES)), expand = c(0.05, 0.05)) +
+  guides(color = guide_legend(title = "Species"))
+
+print(p_combined)
+```

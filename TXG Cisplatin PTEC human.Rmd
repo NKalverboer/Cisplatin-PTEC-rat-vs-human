@@ -1,0 +1,188 @@
+---
+title: "TXG_Cisplatin_PTEC_Human"
+author: "Nienke Kalverboer"
+date: "2024-06-24"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+install.packages("dplyr")
+install.packages("pheatmap")
+library(dplyr)
+library(pheatmap)
+
+```
+
+# Select top 10 significant modules per conditions
+
+```{r}
+filtered_data <- moduleTableHuman %>%
+  filter(module %in% c("hRPTECTERT1_288", "hRPTECTERT1_274", "hRPTECTERT1_136", "hRPTECTERT1_66", "hRPTECTERT1_287", "hRPTECTERT1_182", "hRPTECTERT1_220", "hRPTECTERT1_210", "hRPTECTERT1_237", "hRPTECTERT1_167", "hRPTECTERT1_276", "hRPTECTERT1_291", "hRPTECTERT1_80", "hRPTECTERT1_251", "hRPTECTERT1_118", "hRPTECTERT1_231", "hRPTECTERT1_188", "hRPTECTERT1_171", "hRPTECTERT1_178", "hRPTECTERT1_259", "hRPTECTERT1_215", "hRPTECTERT1_137", "hRPTECTERT1_151", "hRPTECTERT1_77", "hRPTECTERT1_278", "hRPTECTERT1_262", "hRPTECTERT1_160", "hRPTECTERT1_273", "hRPTECTERT1_175", "hRPTECTERT1_73", "hRPTECTERT1_224", "hRPTECTERT1_213", "hRPTECTERT1_249"))
+```
+
+
+```{r}
+install.packages("reshape2")
+library(reshape2)
+```
+
+# Heatmap
+## Heatmap data
+```{r}
+
+# Reshape data
+heatmap_data <- dcast(filtered_data, sample_id ~ module, value.var = "eg_score")
+
+# sample_id = rownames
+rownames(heatmap_data) <- heatmap_data$sample_id
+heatmap_data <- heatmap_data[,-1]  # Remove the sample_id column as it is now the rownames
+rownames(heatmap_data) <- sub("uploadFile1_SINGLE_", "", rownames(heatmap_data))
+
+# Rownames order
+desired_order <- c("CISPLATIN_8_2.5", "CISPLATIN_8_10", "CISPLATIN_8_50",
+                   "CISPLATIN_24_2.5", "CISPLATIN_24_10", "CISPLATIN_24_50",
+                   "CISPLATIN_72_2.5", "CISPLATIN_72_10", "CISPLATIN_72_50")
+
+heatmap_data <- heatmap_data[desired_order, ]
+```
+
+## Heatmap plot
+```{r}
+pheatmap(heatmap_data, 
+         main = "Heatmap of top 10 modules", 
+         cluster_rows = FALSE, 
+         cluster_cols = TRUE, 
+         scale = "row")
+```
+
+```{r}
+
+filtered_data2 <- moduleTableHuman %>%
+  filter(module %in% c("hRPTECTERT1_288", "hRPTECTERT1_274", "hRPTECTERT1_136", "hRPTECTERT1_66", "hRPTECTERT1_287", "hRPTECTERT1_182", "hRPTECTERT1_220", "hRPTECTERT1_210", "hRPTECTERT1_237", "hRPTECTERT1_167", "hRPTECTERT1_276", "hRPTECTERT1_291", "hRPTECTERT1_80", "hRPTECTERT1_251", "hRPTECTERT1_118", "hRPTECTERT1_231", "hRPTECTERT1_188", "hRPTECTERT1_171", "hRPTECTERT1_178", "hRPTECTERT1_259", "hRPTECTERT1_215", "hRPTECTERT1_137", "hRPTECTERT1_151", "hRPTECTERT1_77", "hRPTECTERT1_278", "hRPTECTERT1_262", "hRPTECTERT1_160", "hRPTECTERT1_273", "hRPTECTERT1_175", "hRPTECTERT1_73", "hRPTECTERT1_224", "hRPTECTERT1_213", "hRPTECTERT1_249"))
+
+# Reshape data
+heatmap_data2 <- dcast(filtered_data2, sample_id ~ module, value.var = "eg_score")
+
+# rownames = sample_id
+rownames(heatmap_data2) <- heatmap_data2$sample_id
+heatmap_data2 <- heatmap_data2[,-1]  # Remove the sample_id column as it is now the rownames
+
+# Remove "uploadFile1_Single_" of sample name
+rownames(heatmap_data2) <- sub("uploadFile1_Single_", "", rownames(heatmap_data2))
+
+# Rowname order
+desired_order2 <- c("CISPLATIN_8_2.5", "CISPLATIN_8_10", "CISPLATIN_8_50",
+                   "CISPLATIN_24_2.5", "CISPLATIN_24_10", "CISPLATIN_24_50",
+                   "CISPLATIN_72_2.5", "CISPLATIN_72_10", "CISPLATIN_72_50")
+
+
+heatmap_data2 <- heatmap_data2[desired_order2, ]
+
+# Heatmap
+heatmap_data_t2 <- t(heatmap_data2)
+
+pheatmap(heatmap_data_t2, 
+         main = "Heatmap of Selected Module Codes", 
+         cluster_rows = TRUE,   # Enable clustering of rows
+         cluster_cols = FALSE,  # Disable clustering of columns to maintain order
+         scale = "row")
+
+```
+
+
+## heatmap plot 2
+```{r}
+install.packages("BiocManager")
+BiocManager::install("ComplexHeatmap")
+```
+
+
+```{r}
+install.packages("ComplexHeatmap")
+install.packages("grid")
+install.packages("extrafont")
+library(ComplexHeatmap)
+library(grid)
+library(extrafont)
+
+font_import(pattern = "NotoSans")
+loadfonts(device = "win")  
+```
+
+
+```{r}
+
+filtered_data3 <- moduleTableHuman %>%
+  filter(module %in% c("hRPTECTERT1_288", "hRPTECTERT1_274", "hRPTECTERT1_136", "hRPTECTERT1_66", "hRPTECTERT1_287", "hRPTECTERT1_182", "hRPTECTERT1_220", "hRPTECTERT1_210", "hRPTECTERT1_237", "hRPTECTERT1_167", "hRPTECTERT1_276", "hRPTECTERT1_291", "hRPTECTERT1_80", "hRPTECTERT1_251", "hRPTECTERT1_118", "hRPTECTERT1_231", "hRPTECTERT1_188", "hRPTECTERT1_171", "hRPTECTERT1_178", "hRPTECTERT1_259", "hRPTECTERT1_215", "hRPTECTERT1_137", "hRPTECTERT1_151", "hRPTECTERT1_77", "hRPTECTERT1_278", "hRPTECTERT1_262", "hRPTECTERT1_160", "hRPTECTERT1_273", "hRPTECTERT1_175", "hRPTECTERT1_73", "hRPTECTERT1_224", "hRPTECTERT1_213", "hRPTECTERT1_249"))
+
+# Reshape data
+heatmap_data3 <- dcast(filtered_data3, sample_id ~ module, value.var = "eg_score")
+
+# Rownames = sample_id
+rownames(heatmap_data3) <- heatmap_data3$sample_id
+heatmap_data3 <- heatmap_data3[,-1]  # Remove the sample_id column as it is now the rownames
+
+# Remove "uploadFile1_Single_"
+rownames(heatmap_data3) <- sub("uploadFile1_Single_", "", rownames(heatmap_data3))
+
+# Rowname order
+desired_order3 <- c("CISPLATIN_8_2.5", "CISPLATIN_8_10", "CISPLATIN_8_50",
+                   "CISPLATIN_24_2.5", "CISPLATIN_24_10", "CISPLATIN_24_50",
+                   "CISPLATIN_72_2.5", "CISPLATIN_72_10", "CISPLATIN_72_50")
+
+heatmap_data3 <- heatmap_data[desired_order3, ]
+
+# Heatmap
+heatmap_data3 <- t(heatmap_data3)
+
+pheatmap(heatmap_data3, 
+         main = "Heatmap of Selected Module Codes", 
+         cluster_rows = TRUE,   # Enable clustering of rows (which are now the original columns)
+         cluster_cols = FALSE,  # Disable clustering of columns (which are now the original rows)
+         scale = "column")      # Scale by column (now rows)
+
+```
+
+
+```{r}
+library(ggplot2)
+# Heatmap
+ht <- Heatmap(heatmap_data3, 
+              name = "EG score", 
+              cluster_rows = TRUE, 
+              cluster_columns = FALSE, 
+              show_column_names = TRUE, 
+              show_row_names = TRUE,
+              row_names_gp = gpar(fontfamily = "Noto Sans", fontsize = 10), 
+              column_names_gp = gpar(fontfamily = "Noto Sans", fontsize = 10),  
+              heatmap_legend_param = list(title = "EG score", title_gp = gpar(fontfamily = "Noto Sans", fontsize = 10)))
+
+# Draw the heatmap
+draw(ht)
+```
+
+
+
+
+```{r}
+col_fun <- colorRamp2(c(min(heatmap_data3), 0, max(heatmap_data3)), c( "blue", "white", "red"))
+
+# Heatmap
+ht2 <- Heatmap(heatmap_data3, 
+              name = "EG score", 
+              cluster_rows = TRUE, 
+              cluster_columns = FALSE, 
+              show_column_names = TRUE, 
+              show_row_names = TRUE,
+              row_names_gp = gpar(fontfamily = "Noto Sans", fontsize = 10), 
+              column_names_gp = gpar(fontfamily = "Noto Sans", fontsize = 10),  
+              heatmap_legend_param = list(title = "EG score", title_gp = gpar(fontfamily = "Noto Sans", fontsize = 10)),
+              col = col_fun)  
+
+draw(ht2)
+```
+
